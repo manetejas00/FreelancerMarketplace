@@ -5,7 +5,6 @@
         <button v-if="canApplyForJob" @click="applyJob">Apply for Job</button>
         <button @click="logout">Logout</button>
         <ProfileView />
-
     </div>
 
 </template>

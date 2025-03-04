@@ -1,8 +1,5 @@
 <template>
     <div>
-        <h2>Profile</h2>
-        <p><strong>Name:</strong> {{ user?.name }} ({{user?.roles?.map(role => role.name).join(', ') || 'No Role'}})
-        </p>
         <template v-if="user?.roles?.some(role => role.name === 'freelancer')">
             <p><strong>Skills:</strong> {{ profile.skills }}</p>
             <p><strong>Experience:</strong> {{ profile.experience }}</p>
@@ -18,9 +15,8 @@
 
         <button @click="isEditing = true">Edit Profile</button>
 
-        <div v-if="isEditing ">
+        <div v-if="isEditing">
             <h3>Edit Profile</h3>
-
             <div v-if="user?.roles?.some(role => role.name === 'freelancer')">
                 <label>Skills: <input v-model="form.skills" /></label>
                 <label>Experience: <input v-model="form.experience" /></label>
