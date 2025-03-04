@@ -13,11 +13,12 @@ return new class extends Migration
     {
         Schema::create('jobs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Client who posts the job
+            $table->foreignId('client_id')->constrained('users')->onDelete('cascade'); // Reference to users table
             $table->string('title');
             $table->text('description');
             $table->decimal('budget', 10, 2);
             $table->string('category');
+            $table->enum('status', ['open', 'closed', 'in_progress'])->default('open');
             $table->timestamps();
         });
     }

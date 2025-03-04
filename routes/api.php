@@ -21,9 +21,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/update', [ProfileController::class, 'updateProfile']);
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/jobs', [JobController::class, 'index']);
     Route::post('/jobs', [JobController::class, 'store']);
+    Route::get('/jobs/{job}', [JobController::class, 'show']);
     Route::put('/jobs/{job}', [JobController::class, 'update']);
     Route::delete('/jobs/{job}', [JobController::class, 'destroy']);
+    Route::post('/jobs/{jobId}/apply', [JobController::class, 'apply']);
 });
+

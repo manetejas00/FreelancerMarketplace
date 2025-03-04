@@ -34,6 +34,7 @@ class AuthController extends Controller
         return response()->json([
             'user' => $user,
             'token' => $token,
+            'roles' => $user->roles->pluck('name'),
             'message' => 'User registered successfully!'
         ]);
     }
@@ -58,6 +59,7 @@ class AuthController extends Controller
         return response()->json([
             'user' => $user,
             'token' => $token,
+            'roles' => $user->roles->pluck('name'),
             'message' => 'User logged in successfully!'
         ]);
     }
@@ -79,7 +81,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'roles' => $user->roles->pluck('name'), 
+                'roles' => $user->roles->pluck('name'),
                 'permissions' => $user->getAllPermissions()->pluck('name') // Ensure permissions are included
             ]
         ]);

@@ -12,7 +12,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable,HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -44,4 +44,16 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function jobs()
+    {
+        return $this->belongsToMany(Job::class)
+            ->withPivot('cover_letter')  // Store the cover letter in the pivot table
+            ->withTimestamps();
+    }
+
+    public function applications()
+    {
+        return $this->hasMany(JobApplication::class, 'freelancer_id');
+    }
 }
