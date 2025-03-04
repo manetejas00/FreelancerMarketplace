@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h2>Welcome, {{ user?.name }}</h2>
+        <h2>Welcome, {{ user?.name }} ({{ user?.roles?.join(', ') }})</h2>
         <button v-if="canCreateProject" @click="createProject">Create Project</button>
         <button v-if="canApplyForJob" @click="applyJob">Apply for Job</button>
         <button @click="logout">Logout</button>
