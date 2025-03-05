@@ -7,10 +7,7 @@ import Profile from "@/views/freelancer/Profile.vue";
 import ProfileList from "@/views/client/ProfileList.vue";
 import PostJob from "@/views/client/PostJob.vue";
 import JobList from "@/views/client/JobList.vue";
-import ClientBidsList from "@/views/client/ClientBidsList.vue";
-
 import FreelancerJobs from "@/views/freelancer/FreelancerJobs.vue";
-import FreelancerBidForm from "@/views/freelancer/FreelancerBidForm.vue";
 
 const routes = [
     { path: "/", redirect: "/login" },
@@ -37,18 +34,8 @@ const routes = [
         meta: { requiresAuth: true, role: "freelancer" },
     },
     {
-        path: "/freelancer/bid/form",
-        component: FreelancerBidForm,
-        meta: { requiresAuth: true, role: "freelancer" },
-    },
-    {
         path: "/client/profile-list",
         component: ProfileList,
-        meta: { requiresAuth: true, role: "client" },
-    },
-    {
-        path: "/client/bids-list",
-        component: ClientBidsList,
         meta: { requiresAuth: true, role: "client" },
     },
     {

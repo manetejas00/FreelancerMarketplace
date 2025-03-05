@@ -12,8 +12,18 @@ class FreelancerProfileFactory extends Factory
 
     public function definition()
     {
+        // Get a random user who has the 'freelancer' role
+        $freelancer = User::whereHas('roles', function ($query) {
+            $query->where('name', 'freelancer');
+        })->inRandomOrder()->first();
+
+        // If no freelancer exists, create one
+        if (!$freelancer) {
+            $freelancer = User::factory()->create()->assignRole('freelancer');
+        }
+
         return [
-            'user_id' => User::factory(), // This creates a User associated with the profile
+            'user_id' => $freelancer->id,
             'skills' => $this->faker->word,
             'experience' => $this->faker->sentence,
             'portfolio' => $this->faker->url,

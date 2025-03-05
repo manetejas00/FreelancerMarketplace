@@ -1,12 +1,15 @@
 <template>
     <div class="container mt-4">
-        <h2>Available Jobs</h2>
+        <h2 class="text-center text-primary mb-4">Available Jobs</h2>
 
-        <div v-if="loading" class="text-center">Loading jobs...</div>
+        <div v-if="loading" class="text-center">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Loading jobs...
+        </div>
         <div v-else-if="jobs.length === 0" class="text-center">No jobs available.</div>
         <div v-else>
-            <table class="table table-bordered">
-                <thead class="table-dark">
+            <table class="table table-striped table-hover">
+                <thead class="thead-dark">
                     <tr>
                         <th>#</th>
                         <th>Title</th>
@@ -26,11 +29,16 @@
                         <td>{{ job.category }}</td>
                         <td>{{ job.client?.name || "Unknown" }}</td>
                         <td>
-                            <button class="btn btn-sm btn-warning me-2" v-if="job.is_creator" @click="openEditModal(job)">Edit</button>
-                            <button class="btn btn-sm btn-danger" @click="deleteJob(job.id)">Delete</button>
-                            <!-- Show applied users in popup -->
-                            <button class="btn btn-sm btn-info" @click="openAppliedUsersModal(job)">View Applied
-                                Users</button>
+                            <button class="btn btn-sm btn-warning me-2" v-if="job.is_creator"
+                                @click="openEditModal(job)">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger" v-if="job.is_creator" @click="deleteJob(job.id)">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                            <button class="btn btn-sm btn-info mt-2" @click="openAppliedUsersModal(job)">
+                                <i class="fas fa-users"></i> View Applied Users
+                            </button>
                         </td>
                     </tr>
                 </tbody>
@@ -43,25 +51,27 @@
                 <h3>Edit Job</h3>
                 <form @submit.prevent="updateJob">
                     <div class="mb-3">
-                        <label>Title</label>
-                        <input v-model="editJobData.title" class="form-control" required />
+                        <label for="title">Title</label>
+                        <input id="title" v-model="editJobData.title" class="form-control" required />
                     </div>
 
                     <div class="mb-3">
-                        <label>Description</label>
-                        <textarea v-model="editJobData.description" class="form-control" required></textarea>
+                        <label for="description">Description</label>
+                        <textarea id="description" v-model="editJobData.description" class="form-control"
+                            required></textarea>
                     </div>
 
                     <div class="mb-3">
-                        <label>Budget ($)</label>
-                        <input type="number" v-model="editJobData.budget" class="form-control" required />
+                        <label for="budget">Budget ($)</label>
+                        <input id="budget" type="number" v-model="editJobData.budget" class="form-control" step="0.01"
+                            min="0" required />
                     </div>
 
+
                     <div class="mb-3">
-                        <label>Category</label>
-                        <select v-model="editJobData.category" class="form-control" required>
-                            <option v-for="category in categories" :key="category" :value="category">
-                                {{ category }}
+                        <label for="category">Category</label>
+                        <select id="category" v-model="editJobData.category" class="form-control" required>
+                            <option v-for="category in categories" :key="category" :value="category">{{ category }}
                             </option>
                         </select>
                     </div>
@@ -79,12 +89,33 @@
             <div class="modal-content">
                 <h3>Applied Users</h3>
                 <ul class="list-group">
-                    <li v-for="user in appliedUsers" :key="user.id" class="list-group-item">
+                    <li v-for="user in appliedUsers" :key="user.id"
+                        class="list-group-item d-flex justify-content-between align-items-center"
+                        @click="openAppliedUsersDetails(user)" style="cursor: pointer;">
                         {{ user.name }}
+                        <span class="badge bg-primary rounded-pill">${{ user.bid_amount }}</span>
                     </li>
                 </ul>
+
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" @click="closeAppliedUsersModal">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Details Modal -->
+        <div v-if="showUserDetailsModal" class="modal-backdrop">
+            <div class="modal-content">
+                <h3>User Details</h3>
+                <div v-if="selectedUser">
+                    <p><strong>Name:</strong> {{ selectedUser.name }}</p>
+                    <p><strong>Email:</strong> {{ selectedUser.email }}</p>
+                    <p><strong>Bid Amount:</strong> ${{ selectedUser.bid_amount }}</p>
+                    <p><strong>Experience:</strong> {{ selectedUser.experience || "N/A" }}</p>
+                    <p><strong>Skills:</strong> {{ selectedUser.skills || "N/A" }}</p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" @click="closeUserDetailsModal">Close</button>
                 </div>
             </div>
         </div>
@@ -101,7 +132,7 @@ const showModal = ref(false);
 const showAppliedUsersModal = ref(false);
 const categories = ["Web Development", "Design", "Marketing", "Writing"];
 const editJobData = ref({ title: "", description: "", budget: "", category: "", id: null });
-const appliedUsers = ref([]);  // For storing applied users
+const appliedUsers = ref([]);
 
 onMounted(async () => {
     await fetchJobs();
@@ -120,18 +151,15 @@ const fetchJobs = async () => {
     }
 };
 
-// Open Modal for Editing
 const openEditModal = (job) => {
-    editJobData.value = { ...job }; // Clone job data into ref
+    editJobData.value = { ...job };
     showModal.value = true;
 };
 
-// Close Edit Modal
 const closeEditModal = () => {
     showModal.value = false;
 };
 
-// Update Job
 const getAuthToken = () => localStorage.getItem("token");
 
 const updateJob = async () => {
@@ -146,11 +174,9 @@ const updateJob = async () => {
             headers: { Authorization: `Bearer ${token}` },
         });
 
-        // Check if the server returned an error message
         if (response.data.error) {
-            alert(response.data.error); // Display the error message returned from the server
+            alert(response.data.error);
         } else {
-            // Update job in the list if update is successful
             const index = jobs.value.findIndex((j) => j.id === editJobData.value.id);
             if (index !== -1) {
                 jobs.value[index] = { ...editJobData.value };
@@ -159,16 +185,14 @@ const updateJob = async () => {
             closeEditModal();
         }
     } catch (error) {
-        // Check if error.response and error.response.data exist to prevent accessing undefined properties
         if (error.response && error.response.data && error.response.data.error) {
-            alert(error.response.data.error); // Show the error message from the response
+            alert(error.response.data.error);
         } else {
-            alert("Failed to update the job. Please try again."); // Fallback error message
+            alert("Failed to update the job. Please try again.");
         }
     }
 };
 
-// Delete Job
 const deleteJob = async (id) => {
     if (confirm("Are you sure you want to delete this job?")) {
         try {
@@ -182,10 +206,9 @@ const deleteJob = async (id) => {
     }
 };
 
-// Open Modal to View Applied Users
 const openAppliedUsersModal = async (job) => {
     try {
-        const response = await axios.get(`/jobs/${job.id}/applied-users`, {
+        const response = await axios.get(`/jobs/${job.id}/applicants`, {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         appliedUsers.value = response.data;
@@ -194,14 +217,71 @@ const openAppliedUsersModal = async (job) => {
         console.error("Error fetching applied users:", error);
     }
 };
+const openAppliedUsersDetails = async (user) => {
+    try {
+        const response = await axios.get(`/users/${user.id}/applied-users-details`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        selectedUser.value = response.data.data; // Correct assignment
+        showUserDetailsModal.value = true;
+    } catch (error) {
+        console.error("Error fetching applied user details:", error);
+    }
+};
 
-// Close Applied Users Modal
+
+
 const closeAppliedUsersModal = () => {
     showAppliedUsersModal.value = false;
 };
+
+const showUserDetailsModal = ref(false);
+const selectedUser = ref(null);
+
+const openUserDetailsModal = (user) => {
+    selectedUser.value = user;
+    showUserDetailsModal.value = true;
+};
+
+const closeUserDetailsModal = () => {
+    showUserDetailsModal.value = false;
+};
+
 </script>
 
 <style scoped>
+/* Global Styles */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+h2 {
+    font-family: 'Arial', sans-serif;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+/* Table Styles */
+.table {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.table-striped tbody tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f1f1f1;
+    cursor: pointer;
+}
+
+th,
+td {
+    text-align: center;
+}
+
 /* Modal Styles */
 .modal-backdrop {
     position: fixed;
@@ -209,46 +289,48 @@ const closeAppliedUsersModal = () => {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
 }
 
 .modal-content {
     background: white;
-    padding: 20px;
-    border-radius: 8px;
-    width: 500px;
+    padding: 30px;
+    border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 500px;
 }
 
 .modal-actions {
-    margin-top: 20px;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    margin-top: 20px;
 }
 
-.modal-content h3 {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
+.modal-actions button {
+    margin-left: 10px;
 }
 
-/* Applied Users Modal */
+/* Applied Users Styles */
 .list-group-item {
     display: flex;
     justify-content: space-between;
-    padding: 10px;
+    padding: 12px;
     border: 1px solid #ddd;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
 }
 
 .list-group-item:hover {
-    background-color: #f0f0f0;
-    cursor: pointer;
+    background-color: #f9f9f9;
 }
 
-/* Buttons */
+.badge {
+    font-size: 1rem;
+}
+
+/* Button Styling */
 .btn-info {
     background-color: #17a2b8;
     color: white;
@@ -258,7 +340,25 @@ const closeAppliedUsersModal = () => {
     background-color: #138496;
 }
 
-/* Modal Form Inputs */
+.btn-warning {
+    background-color: #ffc107;
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+/* Input and Select Styles */
 input.form-control,
 textarea.form-control,
 select.form-control {

@@ -7,61 +7,102 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
+use Exception;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    /**
+     * Register a new user.
+     */
+    public function registerUser(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6',
-            'role' => 'required|in:client,freelancer',
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-
-        $user->assignRole($request->role);
-
-        return response()->json([
-            'message' => 'User registered successfully!',
-            'user' => $user
-        ]);
-    }
-
-    public function login(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Invalid credentials.'],
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users',
+                'password' => 'required|min:6',
+                'role' => 'required|in:client,freelancer',
+            ], [
+                'email.unique' => 'This email is already taken.',
+                'password.min' => 'Password must be at least 6 characters.',
+                'role.in' => 'Invalid role selection.',
             ]);
-        }
 
-        return response()->json([
-            'token' => $user->createToken('auth-token')->plainTextToken,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->getRoleNames()->first(), // Fetch user role
-            ],
-        ]);
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
+
+            // Check if the role exists before assigning
+            $role = Role::where('name', $request->role)->first();
+            if (!$role) {
+                return response()->json(['error' => 'Role does not exist'], 400);
+            }
+
+            $user->assignRole($role);
+
+            return response()->json([
+                'message' => 'User registered successfully!',
+                'user' => $user
+            ], 201);
+        } catch (Exception $e) {
+            Log::error('Registration failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Registration failed. Please try again.'], 500);
+        }
     }
 
-    public function logout(Request $request)
+    /**
+     * Authenticate user and return token.
+     */
+    public function authenticateUser(Request $request)
     {
-        $request->user()->tokens()->delete();
-        return response()->json(['message' => 'Logged out successfully']);
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required',
+            ], [
+                'email.required' => 'Email is required.',
+                'password.required' => 'Password is required.',
+            ]);
+
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                throw ValidationException::withMessages([
+                    'email' => ['Invalid credentials.'],
+                ]);
+            }
+
+            return response()->json([
+                'token' => $user->createToken('auth-token')->plainTextToken,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->getRoleNames()->first(),
+                ],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => $e->getMessage()], 401);
+        } catch (Exception $e) {
+            Log::error('Login failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Authentication failed. Please try again.'], 500);
+        }
+    }
+
+    /**
+     * Logout user and revoke token.
+     */
+    public function logoutUser(Request $request)
+    {
+        try {
+            $request->user()->tokens()->delete();
+            return response()->json(['message' => 'Logged out successfully']);
+        } catch (Exception $e) {
+            Log::error('Logout failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Logout failed. Please try again.'], 500);
+        }
     }
 }

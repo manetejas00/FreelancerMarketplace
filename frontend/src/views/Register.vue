@@ -12,7 +12,7 @@ const message = ref("");
 
 const register = async () => {
     try {
-        await axios.post("/register", { name: name.value, email: email.value, password: password.value, role: role.value });
+        await axios.post("/auth/register", { name: name.value, email: email.value, password: password.value, role: role.value });
         router.push("/login");
     } catch (error) {
         message.value = "Registration failed!";

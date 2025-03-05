@@ -7,71 +7,98 @@ use App\Models\JobApplication;
 use App\Models\Job;
 use App\Models\Bid;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 class JobApplicationController extends Controller
 {
-    // Apply for a job
-    public function apply(Request $request, $jobId)
+    /**
+     * Submit a job application with a bid.
+     */
+    public function submitApplication(Request $request, $jobId)
     {
-        // Validate input
-        $request->validate([
-            'cover_letter' => 'required|string',
-            'rate' => 'required|numeric|min:1', // Validate the proposed rate
-        ]);
+        try {
+            $request->validate([
+                'cover_letter' => 'required|string|max:2000',
+                'rate' => 'required|numeric|min:1|max:10000',
+            ]);
 
-        $job = Job::findOrFail($jobId);
+            $userId = Auth::id();
 
-        // Check if the freelancer has already applied for the job
-        if (JobApplication::where('freelancer_id', Auth::id())->where('job_id', $jobId)->exists()) {
-            return response()->json(['message' => 'You have already applied for this job'], 400);
+            // Check if user has already applied
+            if (JobApplication::where('freelancer_id', $userId)->where('job_id', $jobId)->exists()) {
+                return response()->json(['message' => 'You have already applied for this job.'], 400);
+            }
+
+            $job = Job::findOrFail($jobId);
+
+            // Start transaction to ensure both records are created together
+            \DB::beginTransaction();
+
+            // Create job application
+            $application = JobApplication::create([
+                'job_id' => $job->id,
+                'freelancer_id' => $userId,
+                'cover_letter' => $request->cover_letter,
+                'status' => 'pending',
+            ]);
+
+            // Create bid
+            $bid = Bid::create([
+                'job_id' => $job->id,
+                'user_id' => $userId,
+                'rate' => $request->rate,
+                'cover_letter' => $request->cover_letter,
+                'status' => 'pending',
+            ]);
+
+            \DB::commit(); // Commit transaction
+
+            return response()->json([
+                'message' => 'Job application and bid submitted successfully.',
+                'application' => $application,
+                'bid' => $bid,
+            ], 201);
+        } catch (Exception $e) {
+            \DB::rollBack(); // Rollback on error
+            Log::error('Job application submission failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to submit application. Please try again.'], 500);
         }
-
-        // Create the job application record
-        $application = JobApplication::create([
-            'job_id' => $jobId,
-            'freelancer_id' => Auth::id(),
-            'cover_letter' => $request->cover_letter,
-            'status' => 'pending',
-        ]);
-
-        // Create the bid record for the job application
-        $bid = Bid::create([
-            'job_id' => $jobId,
-            'user_id' => Auth::id(),
-            'rate' => $request->rate,
-            'cover_letter' => $request->cover_letter,
-            'status' => 'pending', // The bid is pending until the client accepts it
-        ]);
-
-        return response()->json([
-            'message' => 'Application and bid submitted successfully',
-            'application' => $application,
-            'bid' => $bid,
-        ]);
     }
 
-
-    // List applied jobs for freelancer
-    public function appliedJobs()
+    /**
+     * Get a list of jobs the freelancer has applied for.
+     */
+    public function listAppliedJobs()
     {
-        // Order applications by latest first
-        $applications = JobApplication::where('freelancer_id', Auth::id())
-            ->with('job') // Include job details with the application
-            ->orderBy('created_at', 'desc') // Order by latest application
-            ->get();
+        try {
+            $applications = JobApplication::where('freelancer_id', Auth::id())
+                ->with('job')
+                ->latest()
+                ->get();
 
-        return response()->json($applications);
+            return response()->json($applications);
+        } catch (Exception $e) {
+            Log::error('Fetching applied jobs failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch applied jobs.'], 500);
+        }
     }
 
-    // Get details of a specific application
-    public function show($id)
+    /**
+     * Retrieve details of a specific job application.
+     */
+    public function getApplicationDetails($applicationId)
     {
-        // Fetch the latest application for the freelancer
-        $application = JobApplication::where('freelancer_id', Auth::id())
-            ->where('id', $id)
-            ->with('job')
-            ->firstOrFail(); // This will ensure it throws an error if not found
+        try {
+            $application = JobApplication::where('freelancer_id', Auth::id())
+                ->where('id', $applicationId)
+                ->with('job')
+                ->firstOrFail();
 
-        return response()->json($application);
+            return response()->json($application);
+        } catch (Exception $e) {
+            Log::error('Fetching job application details failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Application not found.'], 404);
+        }
     }
 }

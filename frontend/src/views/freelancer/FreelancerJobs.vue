@@ -116,13 +116,32 @@ const applyJob = async () => {
             },
             { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
+
         alert("Application submitted!");
-        appliedJobs.value.push(selectedJob.value.id);
+
+        // ✅ Update appliedJobs array reactively
+        appliedJobs.value = [...appliedJobs.value, selectedJob.value.id];
+
+        // ✅ Find the job in the jobs array and update its bid range
+        const index = jobs.value.findIndex(job => job.id === selectedJob.value.id);
+        if (index !== -1) {
+            // Ensure Vue detects changes by creating a new object reference
+            jobs.value[index] = {
+                ...jobs.value[index],
+                applied: true, // To disable the button
+                min_bid: Math.min(jobs.value[index].min_bid, rate.value), // Update Min bid if necessary
+                max_bid: Math.max(jobs.value[index].max_bid, rate.value)  // Update Max bid if necessary
+            };
+        }
+        coverLetter.value = "";
+        rate.value = "";
         closeApplyModal();
     } catch (error) {
         console.error("Error applying for job:", error);
     }
 };
+
+
 </script>
 
 <style scoped>

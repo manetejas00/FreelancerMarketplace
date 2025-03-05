@@ -27,6 +27,7 @@ window.addEventListener("storage", () => {
 watchEffect(() => {
     token.value = localStorage.getItem("token");
     role.value = localStorage.getItem("role");
+    user.value.role = role.value || "Guest"; // Keep user.role in sync
 });
 </script>
 
@@ -50,9 +51,6 @@ watchEffect(() => {
                         <router-link to="/jobs" class="nav-link">Jobs List</router-link>
                     </li>
                     <li v-if="role === 'client'" class="nav-item">
-                        <router-link to="/client/bids-list" class="nav-link">Bids List</router-link>
-                    </li>
-                    <li v-if="role === 'client'" class="nav-item">
                         <router-link to="/client/profile-list" class="nav-link">Profile List</router-link>
                     </li>
                     <li v-if="role === 'client'" class="nav-item">
@@ -66,9 +64,6 @@ watchEffect(() => {
                     </li>
                     <li v-if="token && role === 'freelancer'" class="nav-item">
                         <router-link class="nav-link" to="/freelancer/profile">Freelancer Profile</router-link>
-                    </li>
-                    <li v-if="token && role === 'freelancer'" class="nav-item">
-                        <router-link class="nav-link" to="/freelancer/bid/form">Freelancer bid form</router-link>
                     </li>
                     <li v-if="token" class="nav-item">
                         <button class="btn btn-danger ms-2" @click="logout">Logout</button>

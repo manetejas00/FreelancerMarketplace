@@ -10,16 +10,16 @@ const errorMessage = ref("");
 
 const login = async () => {
     try {
-        const response = await axios.post("/login", { email: email.value, password: password.value });
+        const response = await axios.post("/auth/login", { email: email.value, password: password.value });
 
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("name", response.data.user.name);
         localStorage.setItem("role", response.data.user.role);
 
         if (response.data.user.role === "client") {
-            router.push("/client/dashboard");
+            router.push("/client/dashboard").then(() => location.reload());
         } else {
-            router.push("/freelancer/dashboard");
+            router.push("/freelancer/dashboard").then(() => location.reload());
         }
     } catch (error) {
         errorMessage.value = "Invalid email or password";

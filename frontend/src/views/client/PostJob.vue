@@ -18,9 +18,10 @@
 
                 <div class="mb-3">
                     <label class="form-label">Budget ($)</label>
-                    <input v-model="form.budget" type="number" class="form-control" required />
+                    <input v-model="form.budget" type="number" class="form-control" step="0.01" min="0" required />
                     <small v-if="errors.budget" class="text-danger">{{ errors.budget }}</small>
                 </div>
+
 
                 <div class="mb-3">
                     <label class="form-label">Category</label>
