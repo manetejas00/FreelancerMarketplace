@@ -1,28 +1,67 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Register from "../views/Register.vue";
 import Login from "../views/Login.vue";
-import Dashboard from "../views/home/HomeView.vue";
-import JobList from "../views/jobs/JobList.vue";
-import JobManagement from "../views/jobs/JobManagement.vue";
+import Register from "../views/Register.vue";
+import ClientDashboard from "../views/ClientDashboard.vue";
+import FreelancerDashboard from "../views/FreelancerDashboard.vue";
+import Profile from "@/views/freelancer/Profile.vue";
+import ProfileList from "@/views/client/ProfileList.vue";
+import PostJob from "@/views/client/PostJob.vue";
+import JobList from "@/views/client/JobList.vue";
+import ClientBidsList from "@/views/client/ClientBidsList.vue";
+
+import FreelancerJobs from "@/views/freelancer/FreelancerJobs.vue";
+import FreelancerBidForm from "@/views/freelancer/FreelancerBidForm.vue";
 
 const routes = [
     { path: "/", redirect: "/login" },
-    { path: "/register", component: Register },
-    { path: "/login", component: Login },
+    { path: "/login", component: Login, meta: { guest: true } },
+    { path: "/register", component: Register, meta: { guest: true } },
     {
-        path: "/dashboard",
-        component: Dashboard,
-        meta: { requiresAuth: true, roles: ["client", "admin","freelancer"] },
+        path: "/client/dashboard",
+        component: ClientDashboard,
+        meta: { requiresAuth: true, role: "client" },
+    },
+    {
+        path: "/freelancer/dashboard",
+        component: FreelancerDashboard,
+        meta: { requiresAuth: true, role: "freelancer" },
+    },
+    {
+        path: "/freelancer/profile",
+        component: Profile,
+        meta: { requiresAuth: true, role: "freelancer" },
+    },
+    {
+        path: "/freelancer/jobs",
+        component: FreelancerJobs,
+        meta: { requiresAuth: true, role: "freelancer" },
+    },
+    {
+        path: "/freelancer/bid/form",
+        component: FreelancerBidForm,
+        meta: { requiresAuth: true, role: "freelancer" },
+    },
+    {
+        path: "/client/profile-list",
+        component: ProfileList,
+        meta: { requiresAuth: true, role: "client" },
+    },
+    {
+        path: "/client/bids-list",
+        component: ClientBidsList,
+        meta: { requiresAuth: true, role: "client" },
     },
     {
         path: "/jobs",
+        name: "JobList",
         component: JobList,
-        meta: { requiresAuth: true, roles: ["freelancer"] },
+        meta: { requiresAuth: true, role: "client" },
     },
     {
-        path: "/manage-jobs",
-        component: JobManagement,
-        meta: { requiresAuth: true, roles: ["client"] },
+        path: "/post-job",
+        name: "PostJob",
+        component: PostJob,
+        meta: { requiresAuth: true, role: "client" },
     },
 ];
 
@@ -31,18 +70,36 @@ const router = createRouter({
     routes,
 });
 
+// Global Navigation Guard
 router.beforeEach((to, from, next) => {
-    const isAuthenticated = localStorage.getItem("token");
-    const userRole = localStorage.getItem("roles");
+    const isAuthenticated = !!localStorage.getItem("token"); // Check if user is logged in
+    const userRole = localStorage.getItem("role"); // Get user's role (client or freelancer)
+
     if (to.meta.requiresAuth && !isAuthenticated) {
-        return next("/login");
-    }
-    if (to.meta.roles && to.meta.roles.length > 0) {
-        if (!userRole || !to.meta.roles.includes(userRole)) {
-            return next("/dashboard");
+        // If the route requires authentication but the user is not logged in, redirect to login
+        next("/login");
+    } else if (to.meta.guest && isAuthenticated) {
+        // If the route is for guests (login/register) but the user is already logged in, redirect based on role
+        if (userRole === "client") {
+            next("/client/dashboard");
+        } else {
+            next("/freelancer/dashboard");
         }
+    } else if (
+        to.meta.requiresAuth &&
+        to.meta.role &&
+        to.meta.role !== userRole
+    ) {
+        // If user is authenticated but trying to access a page that does not match their role
+        if (userRole === "client") {
+            next("/client/dashboard");
+        } else {
+            next("/freelancer/dashboard");
+        }
+    } else {
+        // Proceed normally
+        next();
     }
-    next();
 });
 
 export default router;
