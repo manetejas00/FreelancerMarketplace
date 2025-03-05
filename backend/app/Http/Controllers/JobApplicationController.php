@@ -101,4 +101,35 @@ class JobApplicationController extends Controller
             return response()->json(['error' => 'Application not found.'], 404);
         }
     }
+
+    /**
+     * Update the status of a bid.
+     */
+    public function updateBidStatus(Request $request, $userId, $jobId)
+    {
+        try {
+            $request->validate([
+                'status' => 'required|in:Accepted,Rejected',
+            ]);
+
+            // Find the bid
+            $bid = Bid::where('user_id', $userId)->where('job_id', $jobId)->first();
+
+            // If no bid found, return an error
+            if (!$bid) {
+                return response()->json(['error' => 'Bid not found.'], 404);
+            }
+
+            // Update the bid status
+            $bid->update(['status' => $request->status]);
+
+            return response()->json([
+                'message' => 'Bid status updated successfully.',
+                'bid' => $bid,
+            ]);
+        } catch (Exception $e) {
+            Log::error('Bid status update failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to update bid status.'], 500);
+        }
+    }
 }

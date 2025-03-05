@@ -56,7 +56,7 @@
                 <!-- Hourly Rate -->
                 <div class="mb-3">
                     <label class="form-label">Hourly Rate ($)</label>
-                    <input v-model="form.hourly_rate" type="number" class="form-control" required />
+                    <input v-model="form.hourly_rate" type="number" class="form-control" required step="0.01" min="0" />
                     <small v-if="errors.hourly_rate" class="text-danger">{{ errors.hourly_rate }}</small>
                 </div>
 

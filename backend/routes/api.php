@@ -34,7 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/apply', [JobApplicationController::class, 'submitApplication']);
 
     });
-
+    Route::post('/bids/{userId}/{jobId}/update-status', [JobApplicationController::class, 'updateBidStatus']);
     Route::get('/users/{id}/applied-users-details', [ProfileController::class, 'getUserDetailsApplicants']);
     Route::get('/freelancers', [ProfileController::class, 'listFreelancers']);
 });

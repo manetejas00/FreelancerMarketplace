@@ -91,9 +91,39 @@
                 <ul class="list-group">
                     <li v-for="user in appliedUsers" :key="user.id"
                         class="list-group-item d-flex justify-content-between align-items-center"
-                        @click="openAppliedUsersDetails(user)" style="cursor: pointer;">
+                        style="cursor: pointer;">
+
                         {{ user.name }}
                         <span class="badge bg-primary rounded-pill">${{ user.bid_amount }}</span>
+                        <div>
+                            <button class="btn btn-sm btn-primary me-2" @click="openAppliedUsersDetails(user)">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                        </div>
+                        <div>
+                            <!-- Show buttons if there are NO bids OR if the first bid status is 'pending' -->
+                            <template v-if="!user?.bids.length || user?.bids[0]?.status === 'pending'">
+                                <button class="btn btn-sm btn-success me-2"
+                                    @click="updateBidStatus(user.id, 'Accepted')">
+                                    <i class="fas fa-check-circle"></i> Accept
+                                </button>
+                                <button class="btn btn-sm btn-danger" @click="updateBidStatus(user.id, 'Rejected')">
+                                    <i class="fas fa-times-circle"></i> Reject
+                                </button>
+                            </template>
+
+                            <!-- Show status badge if there is a bid and it's accepted or rejected -->
+                            <span
+                                v-else-if="user?.bids[0]?.status === 'accepted' || user?.bids[0]?.status === 'rejected'"
+                                :class="{
+                                    'badge bg-success': user?.bids[0]?.status === 'accepted',
+                                    'badge bg-danger': user?.bids[0]?.status === 'rejected'
+                                }">
+                                {{ user?.bids[0]?.status.charAt(0).toUpperCase() + user?.bids[0]?.status.slice(1) }}
+                            </span>
+                        </div>
+
+
                     </li>
                 </ul>
 
@@ -205,12 +235,14 @@ const deleteJob = async (id) => {
         }
     }
 };
+const selectedJobId = ref(null); // Store job ID globally
 
 const openAppliedUsersModal = async (job) => {
     try {
         const response = await axios.get(`/jobs/${job.id}/applicants`, {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
+        selectedJobId.value = job.id;
         appliedUsers.value = response.data;
         showAppliedUsersModal.value = true;
     } catch (error) {
@@ -246,6 +278,36 @@ const openUserDetailsModal = (user) => {
 const closeUserDetailsModal = () => {
     showUserDetailsModal.value = false;
 };
+
+const updateBidStatus = async (userId, newStatus) => {
+    try {
+        // Find the user in appliedUsers
+        const user = appliedUsers.value.find(user => user.id === userId);
+
+        const jobId = selectedJobId.value; // Extract job_id from the first bid entry
+        const payload = { status: newStatus };
+
+        await axios.post(`/bids/${userId}/${jobId}/update-status`, payload, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // Update the status in the local array
+        user.status = newStatus;
+
+        alert(`Bid status updated to ${newStatus}`);
+    } catch (error) {
+        console.error("Error updating bid status:", error);
+
+        if (error.response) {
+            console.error("Server Response:", error.response.data);
+        }
+    }
+};
+
+
+
 
 </script>
 
