@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\JobApplicationController;
+use App\Http\Controllers\ReviewController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'registerUser']);
@@ -15,8 +16,8 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logoutUser']);
 
-    Route::middleware('role:client')->get('/client/dashboard', fn () => response()->json(['message' => 'Welcome, Client!']));
-    Route::middleware('role:freelancer')->get('/freelancer/dashboard', fn () => response()->json(['message' => 'Welcome, Freelancer!']));
+    Route::middleware('role:client')->get('/client/dashboard', fn() => response()->json(['message' => 'Welcome, Client!']));
+    Route::middleware('role:freelancer')->get('/freelancer/dashboard', fn() => response()->json(['message' => 'Welcome, Freelancer!']));
 
     Route::prefix('freelancer')->group(function () {
         Route::get('/profile', [ProfileController::class, 'showFreelancerProfile']);
@@ -32,9 +33,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [JobController::class, 'deleteJob']);
         Route::get('/{jobId}/applicants', [JobController::class, 'getApplicantsWithBids']);
         Route::post('/{id}/apply', [JobApplicationController::class, 'submitApplication']);
-
     });
     Route::post('/bids/{userId}/{jobId}/update-status', [JobApplicationController::class, 'updateBidStatus']);
     Route::get('/users/{id}/applied-users-details', [ProfileController::class, 'getUserDetailsApplicants']);
     Route::get('/freelancers', [ProfileController::class, 'listFreelancers']);
+
+    Route::get('/freelancers/{freelancer}', [ReviewController::class, 'index']);
+    Route::post('/freelancers/{freelancer}', [ReviewController::class, 'store']);
+
 });

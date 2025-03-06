@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\FreelancerProfile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
@@ -29,19 +30,27 @@ class AuthController extends Controller
                 'role.in' => 'Invalid role selection.',
             ]);
 
+            // Create user
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
             ]);
 
-            // Check if the role exists before assigning
+            // Assign role
             $role = Role::where('name', $request->role)->first();
             if (!$role) {
                 return response()->json(['error' => 'Role does not exist'], 400);
             }
 
             $user->assignRole($role);
+
+            // If the user is a freelancer, create a freelancer profile
+            if ($request->role === 'freelancer') {
+                FreelancerProfile::create([
+                    'user_id' => $user->id
+                ]);
+            }
 
             return response()->json([
                 'message' => 'User registered successfully!',
@@ -52,6 +61,7 @@ class AuthController extends Controller
             return response()->json(['error' => 'Registration failed. Please try again.'], 500);
         }
     }
+
 
     /**
      * Authenticate user and return token.

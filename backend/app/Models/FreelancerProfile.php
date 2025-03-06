@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class FreelancerProfile extends Model
 {
     use HasFactory;
-
-    protected $fillable = [
+    protected $table = 'freelancer_profiles';
+        protected $fillable = [
         'user_id', 'skills', 'experience', 'portfolio', 'hourly_rate', 'company_name', 'project_details', 'working_developers_count'
     ];
 
@@ -30,6 +30,10 @@ class FreelancerProfile extends Model
     {
         return $this->hasManyThrough(Job::class, JobApplication::class, 'freelancer_id', 'id', 'id', 'job_id')
                     ->orderBy('created_at', 'desc'); // Order jobs by latest first
+    }
+    public function reviews()
+    {
+        return $this->hasMany(Review::class, 'freelancer_id');
     }
 }
 

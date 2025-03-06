@@ -7,13 +7,12 @@ use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_the_application_returns_a_successful_response(): void
+    /** @test */
+    public function it_loads_the_homepage()
     {
-        $response = $this->get('/');
+        $response = $this->get('/'); // Simulate GET request
 
-        $response->assertStatus(200);
+        $response->assertStatus(200); // Ensure response is OK
     }
 }
+

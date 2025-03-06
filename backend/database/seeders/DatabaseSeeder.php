@@ -33,10 +33,15 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ]);
             $user->assignRole($userData['role']);
+            if ($userData['role'] === 'freelancer') {
+                FreelancerProfile::create([
+                    'user_id' => $user->id
+                ]);
+            }
         }
-        FreelancerProfile::factory(10)->create();
-        Job::factory(5)->create();
-        JobApplication::factory(10)->create();
-        Bid::factory(10)->create();
+        // FreelancerProfile::factory(10)->create();
+        // Job::factory(5)->create();
+        // JobApplication::factory(10)->create();
+        // Bid::factory(10)->create();
     }
 }

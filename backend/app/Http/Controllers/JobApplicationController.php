@@ -9,6 +9,7 @@ use App\Models\Bid;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use App\Events\NewNotification;
 
 class JobApplicationController extends Controller
 {
@@ -131,5 +132,12 @@ class JobApplicationController extends Controller
             Log::error('Bid status update failed: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to update bid status.'], 500);
         }
+    }
+
+
+    public function sendNotification()
+    {
+        broadcast(new NewNotification("New message received!"))->toOthers();
+        return response()->json(['message' => 'Notification sent!']);
     }
 }

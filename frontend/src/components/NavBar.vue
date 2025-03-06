@@ -45,16 +45,16 @@ watchEffect(() => {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li v-if="token && role === 'freelancer'" class="nav-item">
-                        <router-link to="/" class="nav-link">Freelancer Apply Jobs</router-link>
+                        <router-link to="/" class="nav-link">Jobs</router-link>
                     </li>
                     <li v-if="role === 'client'" class="nav-item">
                         <router-link to="/jobs" class="nav-link">Jobs List</router-link>
                     </li>
                     <li v-if="role === 'client'" class="nav-item">
-                        <router-link to="/client/profile-list" class="nav-link">Profile List</router-link>
+                        <router-link to="/client/profile-list" class="nav-link">Freelancer Profile List</router-link>
                     </li>
                     <li v-if="role === 'client'" class="nav-item">
-                        <router-link to="/post-job" class="nav-link">PostJob List</router-link>
+                        <router-link to="/post-job" class="nav-link">PostJob Form</router-link>
                     </li>
                     <li v-if="!token" class="nav-item">
                         <router-link to="/login" class="nav-link">Login</router-link>
