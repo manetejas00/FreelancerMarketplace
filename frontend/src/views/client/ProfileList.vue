@@ -4,7 +4,8 @@ import axios from "axios";
 
 const freelancers = ref([]);
 const loading = ref(true);
-const showModal = ref(false);
+const showReviewModal = ref(false);
+const showJobsModal = ref(false);
 const selectedFreelancer = ref(null);
 const newReview = ref({ rating: 0, comment: "" });
 const submitting = ref(false);
@@ -22,9 +23,9 @@ onMounted(async () => {
 });
 
 // Open modal and fetch reviews
-const openModal = async (freelancer) => {
+const openReviewModal = async (freelancer) => {
     selectedFreelancer.value = { ...freelancer, reviews: [] };
-    showModal.value = true;
+    showReviewModal.value = true;
 
     try {
         const { data } = await axios.get(`/freelancers/${freelancer.id}`);
@@ -35,8 +36,15 @@ const openModal = async (freelancer) => {
     }
 };
 
-const closeModal = () => {
-    showModal.value = false;
+// Open modal for applied jobs
+const openJobsModal = (freelancer) => {
+    selectedFreelancer.value = freelancer;
+    showJobsModal.value = true;
+};
+
+const closeModals = () => {
+    showReviewModal.value = false;
+    showJobsModal.value = false;
     selectedFreelancer.value = null;
 };
 
@@ -99,11 +107,11 @@ const generateStars = (rating) => "★".repeat(rating) + "☆".repeat(5 - rating
                         <span v-else>Not Available</span>
                     </td>
                     <td>
-                        <button @click="openModal(freelancer)" class="btn btn-primary">View Reviews</button>
+                        <button @click="openReviewModal(freelancer)" class="btn btn-primary">View Reviews</button>
                     </td>
                     <td>
-                        <button v-if="freelancer.applied_jobs?.length" @click="openModal(freelancer)"
-                            class="view-more-btn">
+                        <button v-if="freelancer.applied_jobs?.length" @click="openJobsModal(freelancer)"
+                            class="btn btn-secondary">
                             View More Applied Jobs
                         </button>
                         <span v-else>No applied jobs</span>
@@ -113,10 +121,10 @@ const generateStars = (rating) => "★".repeat(rating) + "☆".repeat(5 - rating
         </table>
     </div>
 
-    <!-- Modal -->
-    <div v-if="showModal" class="modal" @click="closeModal">
+    <!-- Reviews Modal -->
+    <div v-if="showReviewModal" class="modal" @click="closeModals">
         <div class="modal-content" @click.stop>
-            <span class="close" @click="closeModal">&times;</span>
+            <span class="close" @click="closeModals">&times;</span>
             <h2>Reviews for {{ selectedFreelancer?.name }}</h2>
 
             <ul class="reviews-list" v-if="selectedFreelancer?.can_review == false">
@@ -129,7 +137,6 @@ const generateStars = (rating) => "★".repeat(rating) + "☆".repeat(5 - rating
                 </li>
             </ul>
 
-            <!-- Ensure we are checking selectedFreelancer.can_review, not selectedFreelancer.reviews.can_review -->
             <div v-if="selectedFreelancer?.can_review" class="review-form">
                 <h3 class="form-title">Leave a Review</h3>
 
@@ -153,6 +160,18 @@ const generateStars = (rating) => "★".repeat(rating) + "☆".repeat(5 - rating
         </div>
     </div>
 
+    <!-- Applied Jobs Modal -->
+    <div v-if="showJobsModal" class="modal" @click="closeModals">
+        <div class="modal-content" @click.stop>
+            <span class="close" @click="closeModals">&times;</span>
+            <h2>Applied Jobs for {{ selectedFreelancer?.name }}</h2>
+            <ul class="applied-jobs-list">
+                <li v-for="job in selectedFreelancer?.applied_jobs" :key="job.id" class="job-item">
+                    <strong>{{ job.title }}</strong> - {{ job.company }}
+                </li>
+            </ul>
+        </div>
+    </div>
 </template>
 
 <style scoped>
@@ -187,7 +206,8 @@ const generateStars = (rating) => "★".repeat(rating) + "☆".repeat(5 - rating
     cursor: pointer;
 }
 
-.review-item {
+.review-item,
+.job-item {
     background: #f8f9fa;
     padding: 15px;
     margin-bottom: 10px;
@@ -200,56 +220,6 @@ const generateStars = (rating) => "★".repeat(rating) + "☆".repeat(5 - rating
     font-size: 18px;
 }
 
-.review-form {
-    margin-top: 15px;
-}
-.review-form {
-    background: #ffffff;
-    border-radius: 10px;
-    padding: 20px;
-    max-width: 500px;
-    margin: 20px auto;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    text-align: center;
-}
-
-.form-title {
-    font-size: 1.5rem;
-    color: #333;
-    margin-bottom: 15px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-    text-align: left;
-}
-
-label {
-    font-weight: bold;
-    color: #555;
-    display: block;
-    margin-bottom: 5px;
-}
-
-.form-control {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease-in-out;
-}
-
-.form-control:focus {
-    border-color: #007bff;
-    outline: none;
-}
-
-.textarea {
-    height: 100px;
-    resize: none;
-}
-
 .submit-btn {
     background: #007bff;
     color: white;
@@ -258,7 +228,6 @@ label {
     border-radius: 5px;
     font-size: 1rem;
     cursor: pointer;
-    transition: background 0.3s ease-in-out;
     width: 100%;
 }
 
@@ -270,5 +239,4 @@ label {
     background: #ccc;
     cursor: not-allowed;
 }
-
 </style>
