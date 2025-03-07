@@ -7,6 +7,8 @@ use App\Http\Requests\UpdateJobRequest;
 use App\Services\JobService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
+use App\Helpers\EncryptionHelper;
+
 
 class JobController extends Controller
 {
@@ -41,7 +43,7 @@ class JobController extends Controller
     public function getApplicantsWithBids($encodedJobId)
     {
         try {
-            $jobId = base64_decode($encodedJobId);
+            $jobId = EncryptionHelper::decodeId($encodedJobId);
             $applicants = $this->jobService->getApplicantsWithBids($jobId);
             return response()->json($applicants);
         } catch (ModelNotFoundException $e) {
