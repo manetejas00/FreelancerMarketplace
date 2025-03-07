@@ -6,8 +6,11 @@ use App\Http\Requests\StoreJobRequest;
 use App\Http\Requests\UpdateJobRequest;
 use App\Services\JobService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Request;
 use Exception;
 use App\Helpers\EncryptionHelper;
+use Illuminate\Support\Facades\Log;
+
 
 
 class JobController extends Controller
@@ -20,15 +23,29 @@ class JobController extends Controller
         $this->jobService = $jobService;
     }
 
-    public function createJob(StoreJobRequest $request)
+
+    public function createJob(Request $request)
     {
         try {
-            $job = $this->jobService->createJob($request->validated());
+            // Decrypt the incoming data
+            $decryptedData = json_decode(EncryptionHelper::decodeId($request->input('data')), true);
+            // Validate the decrypted data using Laravel's Validator
+            $validated = validator($decryptedData, [
+                'title' => 'required|string|max:255',
+                'description' => 'required|string',
+                'budget' => 'required|numeric|min:0',
+                'category' => 'required|string'
+            ])->validate();
+
+            $job = $this->jobService->createJob($validated);
             return response()->json(['message' => 'Job posted successfully', 'job' => $job], 201);
-        } catch (Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => 'Validation failed', 'messages' => $e->errors()], 422);
+        } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to create job', 'message' => $e->getMessage()], 500);
         }
     }
+
 
     public function listJobs()
     {

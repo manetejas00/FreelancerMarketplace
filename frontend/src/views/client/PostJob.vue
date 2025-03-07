@@ -22,7 +22,6 @@
                     <small v-if="errors.budget" class="text-danger">{{ errors.budget }}</small>
                 </div>
 
-
                 <div class="mb-3">
                     <label class="form-label">Category</label>
                     <select v-model="form.category" class="form-control" required>
@@ -50,6 +49,7 @@
 import { ref } from "vue";
 import axios from "axios";
 import { useRouter } from "vue-router";
+import { encryptData } from "@/utils/encryption"; // Import encryption function
 
 const router = useRouter();
 const form = ref({
@@ -67,7 +67,10 @@ const submitJob = async () => {
     serverError.value = "";
 
     try {
-        await axios.post("/jobs", form.value, {
+        // Encrypt the form data before sending
+        const encryptedData = encryptData(JSON.stringify(form.value));
+
+        await axios.post("/jobs", { data: encryptedData }, {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
 
