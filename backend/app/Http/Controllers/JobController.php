@@ -1,90 +1,48 @@
 <?php
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Job;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\StoreJobRequest;
+use App\Http\Requests\UpdateJobRequest;
+use App\Services\JobService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
 
 class JobController extends Controller
 {
-    public function __construct()
+    protected $jobService;
+
+    public function __construct(JobService $jobService)
     {
         $this->middleware('auth');
+        $this->jobService = $jobService;
     }
 
-    /**
-     * Store a new job.
-     */
-    public function createJob(Request $request)
+    public function createJob(StoreJobRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'required|string',
-                'budget' => 'required|numeric|min:0',
-                'category' => 'required|string|max:255',
-            ]);
-
-            $job = Job::create([
-                'client_id' => Auth::id(),
-                'title' => $validated['title'],
-                'description' => $validated['description'],
-                'budget' => $validated['budget'],
-                'category' => $validated['category'],
-            ]);
-
+            $job = $this->jobService->createJob($request->validated());
             return response()->json(['message' => 'Job posted successfully', 'job' => $job], 201);
         } catch (Exception $e) {
             return response()->json(['error' => 'Failed to create job', 'message' => $e->getMessage()], 500);
         }
     }
 
-    /**
-     * Fetch all jobs with bid details.
-     */
     public function listJobs()
     {
         try {
-            $user = Auth::user();
-
-            $jobs = Job::with('client:id,name')
-                ->with(['bids' => fn($query) => $query->select('job_id', 'rate')])
-                ->latest()
-                ->get();
-
-            $jobs->map(function ($job) use ($user) {
-                $job->min_bid = $job->bids->min('rate');
-                $job->max_bid = $job->bids->max('rate');
-                $job->is_creator = $user && $job->client_id === $user->id;
-                return $job;
-            });
-
-            // Prioritize jobs created by the authenticated user
-            $jobs = $jobs->sortByDesc(fn($job) => $job->is_creator)->values();
-
+            $jobs = $this->jobService->listJobs();
             return response()->json($jobs);
         } catch (Exception $e) {
             return response()->json(['error' => 'Failed to fetch jobs', 'message' => $e->getMessage()], 500);
         }
     }
 
-    /**
-     * Get applicants and their bids for a job.
-     */
     public function getApplicantsWithBids($jobId)
     {
         try {
-            $job = Job::findOrFail($jobId);
-
-            $appliedUsers = $job->appliedUsers()
-                ->with(['bids' => fn($query) => $query->where('job_id', $jobId)])
-                ->get();
-
-            $appliedUsers->map(fn($user) => $user->setAttribute('bid_amount', $user->bids->first()?->rate));
-
-            return response()->json($appliedUsers);
+            $applicants = $this->jobService->getApplicantsWithBids($jobId);
+            return response()->json($applicants);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Job not found'], 404);
         } catch (Exception $e) {
@@ -92,27 +50,10 @@ class JobController extends Controller
         }
     }
 
-    /**
-     * Update job details.
-     */
-    public function updateJob(Request $request, $id)
+    public function updateJob(UpdateJobRequest $request, $id)
     {
         try {
-            $job = Job::findOrFail($id);
-
-            if ($job->client_id !== Auth::id()) {
-                return response()->json(['error' => 'Unauthorized'], 403);
-            }
-
-            $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'required|string',
-                'budget' => 'required|numeric|min:0',
-                'category' => 'required|string|max:100',
-            ]);
-
-            $job->update($validated);
-
+            $job = $this->jobService->updateJob($id, $request->validated());
             return response()->json(['message' => 'Job updated successfully', 'job' => $job]);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Job not found'], 404);
@@ -121,20 +62,10 @@ class JobController extends Controller
         }
     }
 
-    /**
-     * Delete a job.
-     */
     public function deleteJob($id)
     {
         try {
-            $job = Job::findOrFail($id);
-
-            if ($job->client_id !== Auth::id()) {
-                return response()->json(['error' => 'Unauthorized'], 403);
-            }
-
-            $job->delete();
-
+            $this->jobService->deleteJob($id);
             return response()->json(['message' => 'Job deleted successfully']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Job not found'], 404);
