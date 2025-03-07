@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import axios from "axios";
+import { encryptData } from "@/utils/encryption";
 
 const freelancers = ref([]);
 const loading = ref(true);
@@ -28,7 +29,8 @@ const openReviewModal = async (freelancer) => {
     showReviewModal.value = true;
 
     try {
-        const { data } = await axios.get(`/freelancers/${freelancer.id}`);
+        const encryptedJobId = encryptData(freelancer.id);
+        const { data } = await axios.get(`/review/${encryptedJobId}/freelancers`);
         selectedFreelancer.value.reviews = data.reviews || [];
         selectedFreelancer.value.can_review = data.can_review;
     } catch (error) {

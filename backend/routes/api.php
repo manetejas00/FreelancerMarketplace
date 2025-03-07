@@ -38,7 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{id}/applied-users-details', [ProfileController::class, 'getUserDetailsApplicants']);
     Route::get('/freelancers', [ProfileController::class, 'listFreelancers']);
 
-    Route::get('/freelancers/{freelancer}', [ReviewController::class, 'index']);
+    Route::get('/review/{freelancer}/freelancers', [ReviewController::class, 'index']);
     Route::post('/freelancers/{freelancer}', [ReviewController::class, 'store']);
 
 });

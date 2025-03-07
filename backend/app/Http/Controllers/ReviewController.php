@@ -6,6 +6,8 @@ use App\Http\Requests\StoreReviewRequest;
 use App\Models\FreelancerProfile;
 use App\Services\ReviewService;
 use Illuminate\Http\JsonResponse;
+use App\Helpers\EncryptionHelper;
+
 
 class ReviewController extends Controller
 {
@@ -16,9 +18,11 @@ class ReviewController extends Controller
         $this->reviewService = $reviewService;
     }
 
-    public function index(FreelancerProfile $freelancer): JsonResponse
+    public function index($encodedJobId): JsonResponse
     {
         try {
+            $freelancerId = EncryptionHelper::decodeId($encodedJobId);
+            $freelancer = FreelancerProfile::findOrFail($freelancerId);
             $data = $this->reviewService->getFreelancerReviews($freelancer);
             return response()->json($data);
         } catch (\Exception $e) {
