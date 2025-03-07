@@ -155,7 +155,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import axios from "axios";
-
+import { encryptData } from "@/utils/encryption"; 
 const jobs = ref([]);
 const loading = ref(true);
 const showModal = ref(false);
@@ -239,9 +239,13 @@ const selectedJobId = ref(null); // Store job ID globally
 
 const openAppliedUsersModal = async (job) => {
     try {
-        const response = await axios.get(`/jobs/${job.id}/applicants`, {
+        const encryptedJobId = encryptData(job.id); // Encrypt Job ID
+        console.log(`Requesting: /jobs/${encryptedJobId}/applicants`); // Debugging
+
+        const response = await axios.get(`/jobs/${encryptedJobId}/applicants`, {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
+
         selectedJobId.value = job.id;
         appliedUsers.value = response.data;
         showAppliedUsersModal.value = true;
@@ -249,6 +253,7 @@ const openAppliedUsersModal = async (job) => {
         console.error("Error fetching applied users:", error);
     }
 };
+
 const openAppliedUsersDetails = async (user) => {
     try {
         const response = await axios.get(`/users/${user.id}/applied-users-details`, {

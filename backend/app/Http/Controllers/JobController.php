@@ -38,9 +38,10 @@ class JobController extends Controller
         }
     }
 
-    public function getApplicantsWithBids($jobId)
+    public function getApplicantsWithBids($encodedJobId)
     {
         try {
+            $jobId = base64_decode($encodedJobId);
             $applicants = $this->jobService->getApplicantsWithBids($jobId);
             return response()->json($applicants);
         } catch (ModelNotFoundException $e) {
