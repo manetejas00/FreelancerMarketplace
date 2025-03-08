@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateJobRequest;
 use App\Services\JobService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Exception;
 use App\Helpers\EncryptionHelper;
 use Illuminate\Support\Facades\Log;
@@ -70,10 +71,22 @@ class JobController extends Controller
         }
     }
 
-    public function updateJob(UpdateJobRequest $request, $id)
+    public function updateJob(Request $request, $id)
     {
         try {
-            $job = $this->jobService->updateJob($id, $request->validated());
+            // Decrypt the incoming request data
+            $decryptedData = json_decode(EncryptionHelper::decodeId($request->input('encrypted')), true);
+
+            // Validate decrypted data
+            $validator = Validator::make($decryptedData, (new UpdateJobRequest())->rules());
+
+            if ($validator->fails()) {
+                return response()->json(['error' => 'Validation failed', 'messages' => $validator->errors()], 422);
+            }
+
+            // Update the job with decrypted & validated data
+            $job = $this->jobService->updateJob($id, $validator->validated());
+
             return response()->json(['message' => 'Job updated successfully', 'job' => $job]);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Job not found'], 404);
@@ -82,10 +95,11 @@ class JobController extends Controller
         }
     }
 
-    public function deleteJob($id)
+    public function deleteJob($encodedJobId)
     {
         try {
-            $this->jobService->deleteJob($id);
+            $jobId = EncryptionHelper::decodeId($encodedJobId);
+            $this->jobService->deleteJob($jobId);
             return response()->json(['message' => 'Job deleted successfully']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Job not found'], 404);

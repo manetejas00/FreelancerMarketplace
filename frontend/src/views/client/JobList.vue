@@ -155,7 +155,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import axios from "axios";
-import { encryptData } from "@/utils/encryption"; 
+import { encryptData } from "@/utils/encryption";
 const jobs = ref([]);
 const loading = ref(true);
 const showModal = ref(false);
@@ -200,9 +200,13 @@ const updateJob = async () => {
     }
 
     try {
-        const response = await axios.put(`/jobs/${editJobData.value.id}`, editJobData.value, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        // Encrypt job data before sending
+        const encryptedData = encryptData(JSON.stringify(editJobData.value));
+
+        const response = await axios.put(`/jobs/${editJobData.value.id}`,
+            { encrypted: encryptedData },  // Send encrypted data
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
 
         if (response.data.error) {
             alert(response.data.error);
@@ -215,7 +219,7 @@ const updateJob = async () => {
             closeEditModal();
         }
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.error) {
+        if (error.response?.data?.error) {
             alert(error.response.data.error);
         } else {
             alert("Failed to update the job. Please try again.");
@@ -223,10 +227,12 @@ const updateJob = async () => {
     }
 };
 
+
 const deleteJob = async (id) => {
     if (confirm("Are you sure you want to delete this job?")) {
         try {
-            await axios.delete(`/jobs/${id}`, {
+            const encryptedJobId = encryptData(id);
+            await axios.delete(`/jobs/${encryptedJobId}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             });
             jobs.value = jobs.value.filter(job => job.id !== id);
