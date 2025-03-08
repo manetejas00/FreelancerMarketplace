@@ -28,9 +28,10 @@ class ProfileController extends Controller
     {
         try {
             // 🔓 Decrypt the encrypted input
+
             $decryptedJson = EncryptionHelper::decodeId($request->input('encrypted'));
             $decryptedData = json_decode($decryptedJson, true);
-
+            logger($decryptedData);
             if (!is_array($decryptedData)) {
                 return response()->json(['error' => 'Invalid decrypted data format'], 400);
             }
@@ -39,7 +40,13 @@ class ProfileController extends Controller
             $validator = Validator::make($decryptedData, [
                 'name' => 'required|string|max:255',
                 'role' => 'required|string|max:255',
-                'bio' => 'nullable|string',
+                'company_name' => 'nullable|string|max:255',
+                'project_details' => 'nullable|string',
+                'working_developers_count' => 'nullable|integer|min:1',
+                'skills' => 'nullable|string',
+                'experience' => 'nullable|integer|min:0',
+                'portfolio' => 'nullable|string',
+                'hourly_rate' => 'nullable|numeric|min:0',
             ]);
 
             if ($validator->fails()) {
@@ -50,6 +57,7 @@ class ProfileController extends Controller
             }
 
             // ✅ Save profile
+
             $result = $this->profileService->saveProfile($validator->validated());
 
             return response()->json([
