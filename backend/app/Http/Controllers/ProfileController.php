@@ -7,6 +7,8 @@ use App\Services\FreelancerProfileService;
 use Illuminate\Support\Facades\Auth;
 use App\Helpers\EncryptionHelper;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class ProfileController extends Controller
 {
@@ -22,11 +24,33 @@ class ProfileController extends Controller
     /**
      * Store or update freelancer profile
      */
-    public function saveFreelancerProfile(SaveFreelancerProfileRequest $request)
+    public function saveFreelancerProfile(Request $request)
     {
         try {
-            $data = $request->validated();
-            $result = $this->profileService->saveProfile($data);
+            // 🔓 Decrypt the encrypted input
+            $decryptedJson = EncryptionHelper::decodeId($request->input('encrypted'));
+            $decryptedData = json_decode($decryptedJson, true);
+
+            if (!is_array($decryptedData)) {
+                return response()->json(['error' => 'Invalid decrypted data format'], 400);
+            }
+
+            // ✅ Validate decrypted data
+            $validator = Validator::make($decryptedData, [
+                'name' => 'required|string|max:255',
+                'role' => 'required|string|max:255',
+                'bio' => 'nullable|string',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'error' => 'Validation failed',
+                    'details' => $validator->errors(),
+                ], 422);
+            }
+
+            // ✅ Save profile
+            $result = $this->profileService->saveProfile($validator->validated());
 
             return response()->json([
                 'message' => 'Profile saved successfully',
@@ -35,7 +59,10 @@ class ProfileController extends Controller
                 'role' => $result['role'],
             ]);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to save profile', 'details' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Failed to save profile',
+                'details' => $e->getMessage(),
+            ], 500);
         }
     }
 

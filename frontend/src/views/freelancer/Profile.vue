@@ -78,6 +78,7 @@
 import { ref, onMounted } from "vue";
 import axios from "axios";
 import { useRouter } from "vue-router";
+import { encryptData } from "@/utils/encryption";
 
 const router = useRouter();
 const form = ref({
@@ -115,9 +116,16 @@ const updateProfile = async () => {
     serverError.value = ""; // Reset server error
 
     try {
-        const response = await axios.post("/freelancer/profile", form.value, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
+        // 🔒 Encrypt the data before sending
+        const encryptedData = encryptData(JSON.stringify(form.value));
+
+        const response = await axios.post(
+            "/freelancer/profile",
+            { encrypted: encryptedData }, // Send encrypted payload
+            {
+                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+            }
+        );
 
         // Update localStorage
         localStorage.setItem("name", response.data.name);
@@ -136,6 +144,7 @@ const updateProfile = async () => {
         console.error("Error updating profile:", error);
     }
 };
+
 
 onMounted(fetchProfile);
 </script>

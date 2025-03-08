@@ -31,7 +31,6 @@ class JobApplicationController extends Controller
 
             // 🔓 Decrypt request data
             $encryptedData = $request->input('encrypted');
-            logger($request);
             if (!$encryptedData) {
                 return response()->json(['error' => 'Missing encrypted data'], 400);
             }
