@@ -7,6 +7,7 @@ use App\Services\JobApplicationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Events\NewNotification;
+use App\Helpers\EncryptionHelper;
 
 class JobApplicationController extends Controller
 {
@@ -39,8 +40,13 @@ class JobApplicationController extends Controller
             : response()->json($result);
     }
 
-    public function updateBidStatus(Request $request, $userId, $jobId)
+    public function updateBidStatus(Request $request, $encryptedUserId, $encryptedJobId)
     {
+        $userId = EncryptionHelper::decodeId($encryptedUserId);
+        $jobId = EncryptionHelper::decodeId($encryptedJobId);
+        $encryptedPayload = $request->input('encrypted');
+        $decryptedData = json_decode(EncryptionHelper::decodeId($encryptedPayload), true);
+        $request->merge($decryptedData);
         $request->validate([
             'status' => 'required|in:Accepted,Rejected',
         ]);

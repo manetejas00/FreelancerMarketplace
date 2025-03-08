@@ -262,7 +262,8 @@ const openAppliedUsersModal = async (job) => {
 
 const openAppliedUsersDetails = async (user) => {
     try {
-        const response = await axios.get(`/users/${user.id}/applied-users-details`, {
+        const encryptedUserId = encryptData(user.id);
+        const response = await axios.get(`/users/${encryptedUserId}/applied-users-details`, {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         selectedUser.value = response.data.data; // Correct assignment
@@ -271,8 +272,6 @@ const openAppliedUsersDetails = async (user) => {
         console.error("Error fetching applied user details:", error);
     }
 };
-
-
 
 const closeAppliedUsersModal = () => {
     showAppliedUsersModal.value = false;
@@ -296,12 +295,13 @@ const updateBidStatus = async (userId, newStatus) => {
         const user = appliedUsers.value.find(user => user.id === userId);
 
         const jobId = selectedJobId.value; // Extract job_id from the first bid entry
-        const payload = { status: newStatus };
-
-        await axios.post(`/bids/${userId}/${jobId}/update-status`, payload, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
+        const encryptedUserId = encryptData(userId);
+        const encryptedJobId = encryptData(jobId);
+        const encryptedPayload = encryptData(JSON.stringify({ status: newStatus }));
+        await axios.post(`/bids/${encryptedUserId}/${encryptedJobId}/update-status`, {
+            encrypted: encryptedPayload // Ensure it's sent as a string, not an array
+        }, {
+            headers: { 'Content-Type': 'application/json' }
         });
 
         // Update the status in the local array
@@ -316,9 +316,6 @@ const updateBidStatus = async (userId, newStatus) => {
         }
     }
 };
-
-
-
 
 </script>
 

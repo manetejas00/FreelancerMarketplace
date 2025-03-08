@@ -1,12 +1,17 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\SaveFreelancerProfileRequest;
 use App\Services\FreelancerProfileService;
 use Illuminate\Support\Facades\Auth;
+use App\Helpers\EncryptionHelper;
+use Spatie\Permission\Traits\HasRoles;
 
 class ProfileController extends Controller
 {
+    use HasRoles;
+
     protected $profileService;
 
     public function __construct(FreelancerProfileService $profileService)
@@ -66,12 +71,13 @@ class ProfileController extends Controller
     /**
      * Get user details along with their bids
      */
-    public function getUserDetailsApplicants($id)
+    public function getUserDetailsApplicants($encodedJobId)
     {
         try {
+            $userId = EncryptionHelper::decodeId($encodedJobId);
             return response()->json([
                 'success' => true,
-                'data' => $this->profileService->getUserDetails($id)
+                'data' => $this->profileService->getUserDetails($userId)
             ]);
         } catch (\Exception $e) {
             return response()->json([
