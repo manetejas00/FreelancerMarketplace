@@ -101,7 +101,6 @@
                             </button>
                         </div>
                         <div>
-                            <!-- Show buttons if there are NO bids OR if the first bid status is 'pending' -->
                             <template v-if="!user?.bids.length || user?.bids[0]?.status === 'pending'">
                                 <button class="btn btn-sm btn-success me-2"
                                     @click="updateBidStatus(user.id, 'Accepted')">
@@ -112,18 +111,14 @@
                                 </button>
                             </template>
 
-                            <!-- Show status badge if there is a bid and it's accepted or rejected -->
-                            <span
-                                v-else-if="user?.bids[0]?.status === 'accepted' || user?.bids[0]?.status === 'rejected'"
-                                :class="{
-                                    'badge bg-success': user?.bids[0]?.status === 'accepted',
-                                    'badge bg-danger': user?.bids[0]?.status === 'rejected'
-                                }">
-                                {{ user?.bids[0]?.status.charAt(0).toUpperCase() + user?.bids[0]?.status.slice(1) }}
+                            <span v-else :class="{
+                                'badge bg-success': user?.bids[0]?.status?.toLowerCase() === 'accepted',
+                                'badge bg-danger': user?.bids[0]?.status?.toLowerCase() === 'rejected'
+                            }">
+                                {{ user?.bids[0]?.status.charAt(0).toUpperCase() +
+                                    user?.bids[0]?.status.slice(1).toLowerCase() }}
                             </span>
                         </div>
-
-
                     </li>
                 </ul>
 
@@ -153,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch, nextTick } from "vue";
 import axios from "axios";
 import { encryptData } from "@/utils/encryption";
 const jobs = ref([]);
@@ -289,34 +284,42 @@ const closeUserDetailsModal = () => {
     showUserDetailsModal.value = false;
 };
 
+// Function to update bid status
 const updateBidStatus = async (userId, newStatus) => {
     try {
-        // Find the user in appliedUsers
-        const user = appliedUsers.value.find(user => user.id === userId);
+        const userIndex = appliedUsers.value.findIndex(user => user.id === userId);
+        if (userIndex === -1) return;
 
-        const jobId = selectedJobId.value; // Extract job_id from the first bid entry
+        const jobId = selectedJobId.value;
         const encryptedUserId = encryptData(userId);
         const encryptedJobId = encryptData(jobId);
         const encryptedPayload = encryptData(JSON.stringify({ status: newStatus }));
+
         await axios.post(`/bids/${encryptedUserId}/${encryptedJobId}/update-status`, {
-            encrypted: encryptedPayload // Ensure it's sent as a string, not an array
+            encrypted: encryptedPayload
         }, {
             headers: { 'Content-Type': 'application/json' }
         });
 
-        // Update the status in the local array
-        user.status = newStatus;
+        // ✅ Ensure Vue detects changes properly
+        appliedUsers.value[userIndex] = {
+            ...appliedUsers.value[userIndex],
+            bids: appliedUsers.value[userIndex].bids.length
+                ? [{ ...appliedUsers.value[userIndex].bids[0], status: newStatus }]
+                : [{ status: newStatus }]
+        };
 
-        alert(`Bid status updated to ${newStatus}`);
+        // Force UI to re-render
+        await nextTick();
+
     } catch (error) {
         console.error("Error updating bid status:", error);
-
-        if (error.response) {
-            console.error("Server Response:", error.response.data);
-        }
     }
 };
-
+// Watch appliedUsers to track changes dynamically
+watch(appliedUsers, (newUsers) => {
+    console.log("Updated Applied Users:", newUsers);
+}, { deep: true });
 </script>
 
 <style scoped>
