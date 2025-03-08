@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Events\NewNotification;
 use App\Helpers\EncryptionHelper;
+use Illuminate\Support\Facades\Validator;
+
 
 class JobApplicationController extends Controller
 {
@@ -18,11 +20,55 @@ class JobApplicationController extends Controller
         $this->jobApplicationService = $jobApplicationService;
     }
 
-    public function submitApplication(SubmitApplicationRequest $request, $jobId)
+    public function submitApplication(Request $request, $encodedJobId)
     {
-        $result = $this->jobApplicationService->submitApplication($request->validated(), $jobId);
-        return response()->json($result, $result['status']);
+        try {
+            // 🔓 Decrypt job ID
+            $jobId = EncryptionHelper::decodeId($encodedJobId);
+            if (!$jobId) {
+                return response()->json(['error' => 'Invalid job ID'], 400);
+            }
+
+            // 🔓 Decrypt request data
+            $encryptedData = $request->input('encrypted');
+            logger($request);
+            if (!$encryptedData) {
+                return response()->json(['error' => 'Missing encrypted data'], 400);
+            }
+
+            $decryptedJson = EncryptionHelper::decodeId($encryptedData);
+            $decryptedData = json_decode($decryptedJson, true);
+
+            // Ensure decryption was successful
+            if (!is_array($decryptedData)) {
+                return response()->json(['error' => 'Invalid decrypted data format'], 400);
+            }
+
+            // ✅ Validate decrypted data
+            $validator = Validator::make($decryptedData, [
+                'cover_letter' => 'required|string|max:255',
+                'rate' => 'required|numeric|min:0',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'error' => 'Validation failed',
+                    'details' => $validator->errors(),
+                ], 422);
+            }
+
+            // ✅ Pass validated data to the service
+            $result = $this->jobApplicationService->submitApplication($validator->validated(), $jobId);
+
+            return response()->json($result, $result['status']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to submit application',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
+
 
     public function listAppliedJobs()
     {

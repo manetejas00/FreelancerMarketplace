@@ -57,6 +57,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import axios from "axios";
+import { encryptData } from "@/utils/encryption";
 
 const jobs = ref([]);
 const appliedJobs = ref([]);
@@ -108,12 +109,16 @@ const closeApplyModal = () => {
 // Apply for Job
 const applyJob = async () => {
     try {
+        // 🔹 Encrypt job ID and application data
+        const encryptedId = encryptData(selectedJob.value.id);
+        const encryptedData = encryptData(JSON.stringify({
+            cover_letter: coverLetter.value,
+            rate: rate.value
+        }));
+
         await axios.post(
-            `/jobs/${selectedJob.value.id}/apply`,
-            {
-                cover_letter: coverLetter.value,
-                rate: rate.value
-            },
+            `/jobs/${encryptedId}/apply`,
+            { encrypted: encryptedData }, // Send encrypted data
             { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
 
@@ -125,14 +130,15 @@ const applyJob = async () => {
         // ✅ Find the job in the jobs array and update its bid range
         const index = jobs.value.findIndex(job => job.id === selectedJob.value.id);
         if (index !== -1) {
-            // Ensure Vue detects changes by creating a new object reference
             jobs.value[index] = {
                 ...jobs.value[index],
                 applied: true, // To disable the button
-                min_bid: Math.min(jobs.value[index].min_bid, rate.value), // Update Min bid if necessary
-                max_bid: Math.max(jobs.value[index].max_bid, rate.value)  // Update Max bid if necessary
+                min_bid: Math.min(jobs.value[index].min_bid, rate.value),
+                max_bid: Math.max(jobs.value[index].max_bid, rate.value)
             };
         }
+
+        // Reset fields & close modal
         coverLetter.value = "";
         rate.value = "";
         closeApplyModal();
@@ -140,7 +146,6 @@ const applyJob = async () => {
         console.error("Error applying for job:", error);
     }
 };
-
 
 </script>
 
