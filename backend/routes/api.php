@@ -39,6 +39,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/freelancers', [ProfileController::class, 'listFreelancers']);
 
     Route::get('/review/{freelancer}/freelancers', [ReviewController::class, 'index']);
-    Route::post('/freelancers/{freelancer}', [ReviewController::class, 'store']);
+    Route::post('/freelancers/{freelancer}/submit-review', [ReviewController::class, 'store']);
 
 });

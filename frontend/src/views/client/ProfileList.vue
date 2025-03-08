@@ -59,7 +59,13 @@ const submitReview = async () => {
 
     submitting.value = true;
     try {
-        await axios.post(`/freelancers/${selectedFreelancer.value.id}`, newReview.value);
+        const encryptedFreelancerId = encryptData(selectedFreelancer.value.id);
+        const encryptedReview = encryptData(JSON.stringify(newReview.value));
+        await axios.post(`/freelancers/${encryptedFreelancerId}/submit-review`, {
+            encrypted: encryptedReview
+        }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
         selectedFreelancer.value.reviews.push({ ...newReview.value });
         newReview.value = { rating: 0, comment: "" };
         alert("Review submitted successfully!");
